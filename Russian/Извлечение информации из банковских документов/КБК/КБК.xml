@@ -1,0 +1,162 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<syntax>XEE</syntax>
+<version>0</version>
+<language>Russian</language>
+<user_entities>
+    <entity>
+        <enable>true</enable>
+        <color>10747904</color>
+        <createMatchColumns>true</createMatchColumns>
+        <createRuleNameColumn>true</createRuleNameColumn>
+        <description/>
+        <useLinguaMarkSyntax>false</useLinguaMarkSyntax>
+        <trainedModelId/>
+        <columnsOrder/>
+        <validationColumns/>
+        <defaultHiddenColumns/>
+        <type>
+            <name>Custom/КБК</name>
+            <category>1</category>
+        </type>
+        <xpdl>
+            <default_rule>false</default_rule>
+            <rule>rule: КБК 
+	{  
+		query: follow( // Поиск контекстов, в которых за аббревиатурой &quot;КБК&quot; следует цепочка из цифр.
+		form(КБК),  // Поиск аббревиатуры &quot;КБК&quot; в заданной форме. 
+		
+		{phrase(0, // Поиск цепочки из цифр, следующих друг за другом без знаков препинания или других символов. 
+				{length(3, 3, number())}:код_администратора, // Поиск числа, состоящего из трех символов.
+			       	{length(1, 1, number())}:группа_доходов, // Поиск числа, состоящего из одного символа.
+				{length(2, 2, number())}:подгруппа, // Поиск числа, состоящего из двух символов.
+				{length(5, 5, number())}:статья, // Поиск числа, состоящего из пяти символов.
+				{length(2, 2, number())}:элемент_доходов,
+// Поиск числа, состоящего из двух символов.
+				{length(4, 4, number())}:группа_подвида, // Поиск числа, состоящего из четырех символов. 
+				{length(3, 3, number())}:аналитическая_группа // Поиск числа, состоящего из трех символов.
+				  )}:m)
+
+		result: Код = $m // Создание колонки &quot;Код&quot; и вывод в нее полного кода бюджетной классификации.
+			attribute: Код главного администратора дохода бюджета = $код_администратора // Создание колонки &quot;Код главного администратора дохода бюджета&quot; и вывод в нее именованной группы &quot;код_администратора&quot;.
+			attribute: Группа доходов = $группа_доходов // Создание колонки &quot;Группа доходов&quot; и вывод в нее именованной группы &quot;группа_доходов&quot;.
+			attribute: Подгруппа доходов = $подгруппа // Создание колонки &quot;Подгруппа доходов&quot; и вывод в нее именованной группы &quot;подгруппа&quot;.
+			attribute: Статья доходов = $статья // Создание колонки &quot;Статья доходов&quot; и вывод в нее именованной группы &quot;статья&quot;.
+			attribute: Элемент доходов = $элемент_доходов // Создание колонки &quot;Элемент доходов&quot; и вывод в нее именованной группы &quot;элемент_доходов&quot;.
+			attribute: Группа подвида доходов бюджета = $группа_подвида // Создание колонки &quot;Группа подвида доходов бюджета&quot; и вывод в нее именованной группы &quot;группа_подвида&quot;.
+			attribute: Аналитическая группа подвида доходов бюджета = $аналитическая_группа // Создание колонки &quot;Аналитическая группа подвида доходов бюджета&quot; и вывод в нее именованной группы &quot;аналитическая_группа&quot;.
+			
+	}</rule>
+            <match_column_name>Match</match_column_name>
+            <test_text/>
+            <XEntityRuleBookmarks/>
+        </xpdl>
+        <filter/>
+        <postprocessing>
+            <postprocessors>
+                <postprocessor>
+                    <caption>Нормализация</caption>
+                    <enabled>true</enabled>
+                    <standard>false</standard>
+                    <params>
+                        <postprocessorName>NormalizePostprocessor</postprocessorName>
+                        <matchedAttributes>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Аналитическая группа подвида доходов бюджета</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Группа доходов</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Группа подвида доходов бюджета</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Код главного администратора дохода бюджета</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Подгруппа доходов</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Элемент доходов</proposed>
+                            </attribute>
+                        </matchedAttributes>
+                        <options>
+                            <attribute_options>
+                                <attribute_name>Аналитическая группа подвида доходов бюджета</attribute_name>
+                                <options>
+                                    <ReplaceOption>
+                                        <Case_sensitive>true</Case_sensitive>
+                                        <Regular_expression>false</Regular_expression>
+                                        <Scope_option>Word</Scope_option>
+                                        <ReplaceRules>
+                                            <ReplaceRule>
+                                                <Search>110</Search>
+                                                <Replace>Налоговые доходы</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>160</Search>
+                                                <Replace>Страховые взносы на обязательное социальное страхование</Replace>
+                                            </ReplaceRule>
+                                        </ReplaceRules>
+                                        <NormalizationOption>
+                                            <Apply_option>0</Apply_option>
+                                        </NormalizationOption>
+                                    </ReplaceOption>
+                                </options>
+                            </attribute_options>
+                            <attribute_options>
+                                <attribute_name>Группа подвида доходов бюджета</attribute_name>
+                                <options>
+                                    <ReplaceOption>
+                                        <Case_sensitive>true</Case_sensitive>
+                                        <Regular_expression>false</Regular_expression>
+                                        <Scope_option>Word</Scope_option>
+                                        <ReplaceRules>
+                                            <ReplaceRule>
+                                                <Search>1000</Search>
+                                                <Replace>Налоги</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>1010</Search>
+                                                <Replace>Страховые взносы на обязательное пенсионное страхование</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>1013</Search>
+                                                <Replace>Страховые взносы на обязательное медицинское страхование</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>3000</Search>
+                                                <Replace>Штрафы</Replace>
+                                            </ReplaceRule>
+                                        </ReplaceRules>
+                                        <NormalizationOption>
+                                            <Apply_option>0</Apply_option>
+                                        </NormalizationOption>
+                                    </ReplaceOption>
+                                </options>
+                            </attribute_options>
+                        </options>
+                    </params>
+                </postprocessor>
+            </postprocessors>
+        </postprocessing>
+        <lingua_mark>
+            <version>0</version>
+            <enable>true</enable>
+            <name/>
+            <max_confidence>1</max_confidence>
+        </lingua_mark>
+        <dependencies/>
+    </entity>
+</user_entities>

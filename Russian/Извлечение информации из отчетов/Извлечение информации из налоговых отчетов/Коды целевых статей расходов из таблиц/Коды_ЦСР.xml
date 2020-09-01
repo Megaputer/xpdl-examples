@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<syntax>XEE</syntax>
+<version>0</version>
+<language>Russian</language>
+<user_entities>
+    <entity>
+        <enable>true</enable>
+        <color>10747904</color>
+        <createMatchColumns>true</createMatchColumns>
+        <createRuleNameColumn>true</createRuleNameColumn>
+        <description/>
+        <useLinguaMarkSyntax>false</useLinguaMarkSyntax>
+        <trainedModelId/>
+        <columnsOrder/>
+        <validationColumns/>
+        <defaultHiddenColumns/>
+        <type>
+            <name>Custom/ЦСР</name>
+            <category>1</category>
+        </type>
+        <xpdl>
+            <default_rule>false</default_rule>
+            <rule>rule: коды в таблицах
+{
+	// table() ищет аргументы, если они указаны в таблице
+	// с помощью параметра column:= ... указываем, что искать нужно только в колонках с определенным названием
+	//т.к. один код может быть разбит на несколько колонок, мы используем функцию repeat() чтобы найти следующие друг за другом части кода и объединить их в код
+	//код должен состоять не менее чем из 5-ти символов (ф-ция length())
+	
+	
+	query: {length(5, repeat(table(char(digit|alnum) or length(1,2) or regex(&quot;ХХ\w+&quot;)),	// варианты записи кода
+						  column:=код or &quot;целевая статья&quot;))}:code 						// ищем только в колонках, в названии которых есть слова &quot;код&quot; или &quot;целевая статья&quot;
+			
+	              					
+	//правило извлекает код и следующее за ним наименование
+	rule: наименование
+	{
+		query: {fnear($code, 
+					 {table(column:=наименование, match:=cell)}:name		//извлекает ячейки колонок, в названии которых есть слово &quot;наименование&quot;
+				)}:res
+		
+		result: Результат = $res
+			attribute: Код = $code
+			attribute: Наименование = $name
+	}
+}
+</rule>
+            <match_column_name>Match</match_column_name>
+            <test_text/>
+            <XEntityRuleBookmarks/>
+        </xpdl>
+        <filter/>
+        <postprocessing>
+            <postprocessors>
+                <postprocessor>
+                    <caption>Нормализация</caption>
+                    <enabled>true</enabled>
+                    <standard>false</standard>
+                    <params>
+                        <postprocessorName>NormalizePostprocessor</postprocessorName>
+                        <matchedAttributes>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Код</proposed>
+                            </attribute>
+                        </matchedAttributes>
+                        <options>
+                            <attribute_options>
+                                <attribute_name>Код</attribute_name>
+                                <options>
+                                    <ReplaceOption>
+                                        <Case_sensitive>true</Case_sensitive>
+                                        <Regular_expression>false</Regular_expression>
+                                        <Scope_option>Word</Scope_option>
+                                        <ReplaceRules>
+                                            <ReplaceRule>
+                                                <Search>&#32;</Search>
+                                                <Replace/>
+                                            </ReplaceRule>
+                                        </ReplaceRules>
+                                        <NormalizationOption>
+                                            <Apply_option>0</Apply_option>
+                                        </NormalizationOption>
+                                    </ReplaceOption>
+                                </options>
+                            </attribute_options>
+                        </options>
+                    </params>
+                </postprocessor>
+            </postprocessors>
+        </postprocessing>
+        <lingua_mark>
+            <version>0</version>
+            <enable>true</enable>
+            <name/>
+            <max_confidence>1</max_confidence>
+        </lingua_mark>
+        <dependencies/>
+    </entity>
+</user_entities>

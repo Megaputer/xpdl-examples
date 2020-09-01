@@ -1,0 +1,38 @@
+//Поиск налогов и акцизов
+//Пример: налог на доходы физических лиц
+rule: налог
+{
+	//Ищем ключевые слова НАЛОГ или АКЦИЗ
+	query: {налог or акциз}:keyword
+	
+	//Далее ищем названия налогов и акцизов в разных вариантах написания
+	
+	//Пример: налог на имущество физических лиц
+	rule: налог_на
+	{
+		query: {phrase($keyword, на,								
+						optional(lemma(noun)), 	    				
+						optional(lemma(adjective)),   				
+						lemma(noun)								
+					)}:nalog
+
+		result: Налог = title(norm($nalog))  
+	}
+	
+	//Пример: транспортный налог
+	rule: прилагательное_налог
+	{
+		query: {phrase(земельный or транспортный, $keyword)}:nalog	
+
+		result: Налог = titel(norm($nalog))      
+	}
+	
+	//Пример: акциз по подакцизным товарам
+	rule: акциз_по
+	{
+		query: {phrase($keyword, по, подакцизные, товары)}:nalog 	
+
+		result: Налог = title(norm($nalog))      
+	}
+}
+

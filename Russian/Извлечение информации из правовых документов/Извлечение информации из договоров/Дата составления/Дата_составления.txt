@@ -1,0 +1,10 @@
+//Поиск даты составления договора
+//Пример: Договор от 12.12.2017
+rule: дата
+{
+    query: {sfollow(Договор, phrase(от, {entity(Dates)}:date))}:m
+
+    result: Результат = norm($m)
+		attribute: Дата составления = toentity(Dates, $date)
+
+}

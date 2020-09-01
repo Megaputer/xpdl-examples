@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<syntax>XEE</syntax>
+<version>0</version>
+<language>Russian</language>
+<user_entities>
+    <entity>
+        <enable>true</enable>
+        <color>10747904</color>
+        <createMatchColumns>true</createMatchColumns>
+        <createRuleNameColumn>true</createRuleNameColumn>
+        <description/>
+        <useLinguaMarkSyntax>false</useLinguaMarkSyntax>
+        <trainedModelId/>
+        <columnsOrder/>
+        <validationColumns/>
+        <defaultHiddenColumns/>
+        <type>
+            <name>Custom/Сумма</name>
+            <category>1</category>
+        </type>
+        <xpdl>
+            <default_rule>false</default_rule>
+            <rule>rule: сумма
+{
+	//Фильтрация текстов, где речь идёт о сумме договора
+	query: {orn(плата, платеж, стоимость, сумма, phrase(3, размер, плата, match:=range), phrase(3, цена, договор, match:=range))}:сумма
+   
+	rule: цена
+	{
+		//Правило, которое ищет ищет сущность рядом с суммой договора, а также период оплаты (если он укзаан)
+		query: {phrase(7, {optional(ежемесячный or ежегодный)}:период, $сумма, 
+				optional(составлять), {entity(Currencies)}:размер, {optional(orn(&quot;в год&quot;, &quot;в месяц&quot;, &quot;ежемесячно&quot;, &quot;ежегодно&quot;))}:период, match:=range)}:цена
+
+		result: Результат = $цена
+			attribute: Сумма=toentity(Currencies, $размер)
+			attribute: Период=$период
+			
+		rule: ндс
+		{
+			//Дополнительное правило, которое ищет, входит ли НДС в указанную сумму
+			//Если да, то также ищется сумма НДС в денежном выражении
+			query: {phrase(10, $цена, not(orn(entity(Currencies), плата, платеж, стоимость, сумма)), 
+					phrase(3, {orn(&quot;в т.ч.&quot;, &quot;в том числе&quot;, &quot;включая&quot;, &quot;с учетом&quot;)}:с_ндс or {orn(&quot;без&quot;, &quot;без учета&quot;)}:без_ндс, 
+					ндс or &quot;налог на добавленную стоимость&quot;, 
+					optional({entity(Currencies)}:ндс)), match:=range)}:цена_ндс
+		
+			result: Результат = $цена_ндс
+				attribute: Сумма=toentity(Currencies, $размер)
+				attribute: Период=$период
+				attribute: НДС = if($с_ндс !=&quot;&quot;, &quot;С учетом&quot;, &quot;Без учета&quot;)
+				attribute: Размер НДС = toentity(Currencies, $ндс)
+		} 
+	}
+}</rule>
+            <match_column_name>Match</match_column_name>
+            <test_text/>
+            <XEntityRuleBookmarks/>
+        </xpdl>
+        <filter/>
+        <postprocessing>
+            <postprocessors>
+                <postprocessor>
+                    <caption>Derive</caption>
+                    <enabled>true</enabled>
+                    <standard>false</standard>
+                    <params>
+                        <postprocessorName>DerivePostprocessor</postprocessorName>
+                        <matchedAttributes>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Период</asked>
+                                <proposed>Период</proposed>
+                            </attribute>
+                        </matchedAttributes>
+                        <options>
+                            <DerivativeItems>
+                                <DerivativeItem>
+                                    <AttributeName>Период</AttributeName>
+                                    <AttributeType>$cat_string</AttributeType>
+                                    <Expression>if(find([Период], &quot;год&quot;), &quot;Год&quot;, if(find([Период], &quot;мес&quot;), &quot;Месяц&quot;, [Период]))</Expression>
+                                </DerivativeItem>
+                            </DerivativeItems>
+                        </options>
+                    </params>
+                </postprocessor>
+            </postprocessors>
+        </postprocessing>
+        <lingua_mark>
+            <version>0</version>
+            <enable>true</enable>
+            <name/>
+            <max_confidence>1</max_confidence>
+        </lingua_mark>
+        <dependencies/>
+    </entity>
+</user_entities>

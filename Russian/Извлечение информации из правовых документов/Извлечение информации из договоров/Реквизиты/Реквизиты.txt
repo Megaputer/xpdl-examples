@@ -1,0 +1,32 @@
+rule: реквизиты
+{
+	/*Правило, которое находит реквизиты компании:
+	- ООО «Велесстрой» (Москва, Ореховый бульвар, д. 33, корп. 6): 
+	  Ипозембанк, ИНН 0274071388, БИК 084505426, КПП 370201001, к\с 607161400, р\с 11105550555000001111.*/
+	query: {fnear({entity(Companies, Industry:!=Банки)}:компания,
+				 
+				 near({entity(Post Addresses)}:адрес,
+					 {optional(entity(Phone Numbers))}:телефон,	
+					 {entity(Companies, Industry:=Банки)}:банк,
+					 {entity(Taxpayer Identification Numbers, Type:=БИК)}:бик,
+					 {entity(Taxpayer Identification Numbers, Type:=КПП)}:кпп,
+					 {optional(entity(Taxpayer Identification Numbers, Type:=ИНН))}:инн,
+					 {optional(entity(Taxpayer Identification Numbers, Type:=ОГРН))}:огрн,
+					 {entity(Account Numbers, Type:="Расчётный счёт")}:расчётный_счёт,
+					 {entity(Account Numbers, Type:="Корреспондентский счёт")}:корреспондентский_счёт,
+					 max_gap:=7),				 
+				
+				max_gap:=5)}:m
+
+	result: Результат = $m
+		attribute: Компания = toentity(Companies, $компания)
+		attribute: Адрес = toentity(Post Addresses, $адрес)
+		attribute: Контактный телефон = toentity(Phone Numbers, $телефон)
+		attribute: ИНН = toentity(Taxpayer Identification Numbers, $инн)
+		attribute: КПП = toentity(Taxpayer Identification Numbers, $кпп)
+		attribute: ОГРН = toentity(Taxpayer Identification Numbers, $огрн)
+		attribute: Банк = toentity(Companies, $банк)
+		attribute: БИК = toentity(Taxpayer Identification Numbers, $бик)
+		attribute: Корреспондентский счёт = toentity(Account Numbers, $корреспондентский_счёт)
+		attribute: Расчётный счёт = toentity(Account Numbers, $расчётный_счёт)
+}

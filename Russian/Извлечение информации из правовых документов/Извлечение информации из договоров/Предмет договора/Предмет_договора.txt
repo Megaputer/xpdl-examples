@@ -1,0 +1,15 @@
+rule: пункт
+{
+	//Фильтруем тексты, где упоминается предмет договора
+	query: {"предмет договора"}:пункт
+	
+	rule: предмет
+	{
+		//правило, которое извлекает возможный предмет договора
+		query: follow(3, $пункт, {phrase(5, orn(предоставить, оказать, осуществить, выполнить), 
+					  {phrase(0, optional(repeat(1, 2, lemma(adjective))), lemma(noun_accusative), optional(lemma(noun_genitive)))}:предмет, allow_punct:=no)}:результат)
+
+		result: Результат = $результат 
+			attribute: Предмет договора = title(norm($предмет))
+	}
+}

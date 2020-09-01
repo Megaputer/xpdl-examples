@@ -1,0 +1,81 @@
+//Поиск динамики налоговых поступлений
+rule: динамика_налога
+{
+	//Ищем все упоминания налога	
+	query: {entity(Налог)}:nalog
+	
+	//Ищем упоминания сумм или процентов
+	rule: размер_изменений
+	{
+		query: {entity(Currencies)}:sum
+				or
+			   {phrase({number()}:percent_number, "%" or процент)}:percent
+
+		//Далее ищем контексты, указывающие на изменения в налоговых сборах
+		
+		//Пример:
+		//Поступления по налогу на имущество организаций составили 21,0 млн. рублей, что превышает поступления налога за аналогичный период прошлого года на 11,7 процента или на 2,2 млн. рублей
+		rule: изменение_поступлений
+		{
+		 query: {sentence($nalog, 											  		  //Поступления по НАЛОГУ НА ИМУЩЕСТВО ОРГАНИЗАЦИЙ
+						  
+						  phrase({term(изменение_поступлений)}:up_down, поступление), //ПРЕВЫШАЕТ ПОСТУПЛЕНИЯ налога за аналогичный период прошлого года
+							
+						  phrase(на, $percent),									 	  //НА 11,7 ПРОЦЕНТА
+							
+						  optional(phrase(на|или, $sum))							  //или НА 2,2 МЛН. РУБЛЕЙ
+										 
+						
+						)}:dyn
+						
+				result: Результат = $dyn
+					attribute: Налог = toentity(Налог, $nalog)
+					attribute: Изменение = title(norm($up_down))
+					attribute: Процент = num($percent_number)
+					attribute: Сумма = toentity(Currencies, $sum, field:=Amount)
+
+		}
+		
+		//Пример:
+	    //Поступления по земельному налогу уменьшились на 8,8%, или на 227 639,8 тыс. рублей в абсолютном выражении	
+		rule: поступления_изменились
+		{
+		 query: {phrase(6, $nalog,															//поступления по ЗЕМЕЛЬНОМУ НАЛОГУ
+		 
+						{снизилось or повысилось or увеличилось or уменьшилось}:up_down,	//УМЕНЬШИЛИСЬ
+						
+						repeat(1,2,phrase(optional(или), на, $percent)						//НА 8,8% 
+								   or
+								   phrase(0,optional(или), на, $sum), allow_punct:=yes)		//ИЛИ НА 227 639,8 ТЫС. РУБЛЕЙ 
+						)}:dyn
+						
+				result: Результат = $dyn
+					attribute: Налог = toentity(Налог, $nalog)
+					attribute: Процент = todouble($percent_number)
+					attribute: Изменение = title(norm($up_down))
+					attribute: Сумма = toentity(Currencies, $sum, field:=Amount)
+		}
+		
+		//Пример:
+		//Налог на имущество физических лиц поступил в сумме 317,1 млн рублей с ростом к аналогичному периоду 2019 года на 121,1 млн рублей		
+		rule: поступил_с_изменением
+		{
+		 query: {sfollow($nalog, 											//НАЛОГ НА ИМУЩЕСТВО ФИЗИЧЕСКИХ ЛИЦ 
+						
+						поступил, с or со,									//ПОСТУПИЛ в сумме 317,1 млн рублей С
+						
+						{рост or снижение or больше or меньше}:up_down,		//РОСТОМ к аналогичному периоду 2019 года
+					
+						phrase(на, $sum),									//НА 121,1 МЛН РУБЛЕЙ
+						
+						optional(phrase(на, $percent))						//опциональный аргумент
+						)}:dyn
+						
+				result: Результат = $dyn
+					attribute: Налог = toentity(Налог, $nalog)
+					attribute: Процент = todouble($percent_number)
+					attribute: Изменение = title(norm($up_down))
+					attribute: Сумма = toentity(Currencies, $sum, field:=Amount)
+		}
+	}
+}
