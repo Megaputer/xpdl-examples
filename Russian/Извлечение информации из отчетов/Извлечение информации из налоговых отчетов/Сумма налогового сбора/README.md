@@ -25,35 +25,35 @@
 		   {entity(Currencies)}:сумма
 		   
 	   
-	rule: налог_поступил_в_сумме
-	{
-		query: {sfollow($налог, "поступил", phrase("в сумме"|"в размере",$сумма))}:сбор
-		
-		result: Результат = $сбор
-			attribute: Название налога = toentity(Налог, $налог, field:=Налог)
-			attribute: Сумма сборов = toentity(Currencies,$сумма, field:=Value)
-	}
-	
-		
-	rule: налог_поступил
-	{
-		query: {sfollow($налог, phrase("поступило", $сумма))}:сбор
-		
-		result: Результат = $сбор
-			attribute: Название налога = toentity(Налог, $налог, field:=Налог)
-			attribute: Сумма сборов = toentity(Currencies,$сумма, field:=Value)
-	}
-	
+		rule: налог_поступил_в_сумме
+		{
+			query: {sfollow($налог, "поступил", phrase("в сумме"|"в размере",$сумма))}:сбор
 
-		rule: поступления_налога
-	{
-		query: {sfollow(поступления , $налог, phrase("составили", $сумма))}:сбор
-		
-		result: Результат = $сбор
-			attribute: Название налога = toentity(Налог, $налог, field:=Налог)
-			attribute: Сумма сборов = toentity(Currencies,$сумма, field:=Value)
+			result: Результат = $сбор
+				attribute: Название налога = toentity(Налог, $налог, field:=Налог)
+				attribute: Сумма сборов = toentity(Currencies,$сумма, field:=Value)
+		}
+
+
+		rule: налог_поступил
+		{
+			query: {sfollow($налог, phrase("поступило", $сумма))}:сбор
+
+			result: Результат = $сбор
+				attribute: Название налога = toentity(Налог, $налог, field:=Налог)
+				attribute: Сумма сборов = toentity(Currencies,$сумма, field:=Value)
+		}
+
+
+			rule: поступления_налога
+		{
+			query: {sfollow(поступления , $налог, phrase("составили", $сумма))}:сбор
+
+			result: Результат = $сбор
+				attribute: Название налога = toentity(Налог, $налог, field:=Налог)
+				attribute: Сумма сборов = toentity(Currencies,$сумма, field:=Value)
+		}
 	}
-}
 
 	```
 * выполнить узел
