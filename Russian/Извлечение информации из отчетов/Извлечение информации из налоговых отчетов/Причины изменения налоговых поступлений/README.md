@@ -25,49 +25,49 @@
 	 * создать новую пользовательскую сущность
 	 * открыть **Редактор правил** новой сущности и скопировать в него правило [**Причины изменения налоговых поступлений.txt**](<Причины изменения налоговых поступлений.txt>):
 	 ```  
-		rule: Причины_изменений 
-		{
-			query: {entity(Динамика)}:dynamics
-		
-			rule: В_предложении
-			{
-				query: {sfollow($dynamics,																								
-						
-						{sfollow(orn("по причине", "в связи", "в результате", "за счет", stem(short, "обусловлено", связан)),	
-								
-								 position(1, ., mode:=backward, scope:=sentence),												
-								
-								 match:=range)}:reason
-				)}:m
-
-		result: Результат = $m 
-			attribute: Налог = toentity(Динамика,$dynamics, field:=Налог)
-			attribute: Изменение = toentity(Динамика,$dynamics, field:=Изменение) 
-			attribute: Процент = toentity(Динамика,$dynamics, field:=Процент) 
-			attribute: Сумма = toentity(Динамика,$dynamics, field:=Сумма)
-			attribute: Причина = $reason
-			}
-	
-	rule: В_абзаце
+	rule: Причины_изменений 
 	{
-		
-		query: {follow(2, $dynamics, 																								  
-		
-					   {sfollow("на динамику поступлений оказало влияние" or phrase(10, рост or снижение, поступлений, stem(short)),  
-								
-								position(1, ., mode:=backward, scope:=sentence),													  
-								
-								match:=range)}:reason
-				)}:m
+		query: {entity(Динамика)}:dynamics
 
-		result: Результат = $m 
-			attribute: Налог = toentity(Динамика,$dynamics, field:=Налог)
-			attribute: Изменение = toentity(Динамика,$dynamics, field:=Изменение) 
-			attribute: Процент = toentity(Динамика,$dynamics, field:=Процент) 
-			attribute: Сумма = toentity(Динамика,$dynamics, field:=Сумма)
-			attribute: Причина = $reason
+		rule: В_предложении
+		{
+			query: {sfollow($dynamics,												
+			
+					{sfollow(orn("по причине", "в связи", "в результате", "за счет", stem(short, "обусловлено", связан)),	
+					
+							 position(1, ., mode:=backward, scope:=sentence),									
+							 
+							 match:=range)}:reason
+			)}:m
+
+			result: Результат = $m 
+				attribute: Налог = toentity(Динамика,$dynamics, field:=Налог)
+				attribute: Изменение = toentity(Динамика,$dynamics, field:=Изменение) 
+				attribute: Процент = toentity(Динамика,$dynamics, field:=Процент) 
+				attribute: Сумма = toentity(Динамика,$dynamics, field:=Сумма)
+				attribute: Причина = $reason
+		}
+	
+		rule: В_абзаце
+		{
+
+			query: {follow(2, $dynamics, 														
+			
+					 {sfollow("на динамику поступлений оказало влияние" or phrase(10, рост or снижение, поступлений, stem(short)),  
+
+							position(1, ., mode:=backward, scope:=sentence),									
+							
+							match:=range)}:reason
+					)}:m
+
+			result: Результат = $m 
+				attribute: Налог = toentity(Динамика,$dynamics, field:=Налог)
+				attribute: Изменение = toentity(Динамика,$dynamics, field:=Изменение) 
+				attribute: Процент = toentity(Динамика,$dynamics, field:=Процент) 
+				attribute: Сумма = toentity(Динамика,$dynamics, field:=Сумма)
+				attribute: Причина = $reason
+		}
 	}
-}
 	```
 	 * выполнить узел
 
