@@ -1,0 +1,52 @@
+/* Правило ищет информацию о возбуждении уголовных дел */
+/* Ищем словосочетание "возбуждено уголовное дело" */
+rule: criminal_action 
+{
+	query: {phrase(возбудить, уголовный, дело)}:match
+
+	result: Результат = $match        
+		attribute: Стадия уголовного процесса = totitle($match)
+		
+		/* Ищем номер статьи */
+		rule: number
+		{
+			/*  возбуждено уголовное дело по части 1 */
+			query: {phrase($match, по, {phrase(orn(статья, часть, "ч.", "ст.", phrase(ст or ч, ".")) or lemma(noun), lemma(numeral|noun), 
+			
+									/* возбуждено уголовное дело по части 1 ст. 231 УК РФ */
+									optional(phrase("ст." or статья, lemma(numeral|noun))), "УК", lemma(noun))}:num
+									
+							
+						)}:match2 or $match
+						
+			result: Результат = $match2        
+				attribute: Стадия уголовного процесса = totitle($match) 
+				attribute: Номер статьи = norm($num)
+				
+				/* Ищем название статьи */
+				rule: article
+				{
+					/* Название может быть записано в скобках, кавычках и т.д. */
+					query: {phrase($match2, orn("(", "-", phrase("(", char(dq))), 
+								
+								/* Ищем последовательность слов до закрывающей скобки или кавычки */
+								phrase({repeat(1, 13, lemma(.) or char(punct)/char(dq|rb))}:article, orn(")", "-", char(dq), phrase(char(dq), ")"))))
+					
+								or
+								
+								phrase($match, по, статья, char(dq), 
+								
+								/* Вариант без номера статьи: "Возбуждено уголовное дело по статье "кража" */
+								phrase({repeat(1, 13, lemma(.))}:article, char(dq)))
+								
+								}:match3 
+								
+					result: Результат = $match3        
+						attribute: Стадия уголовного процесса = totitle($match) 
+						attribute: Номер статьи = norm($num)
+						attribute: Название статьи = totitle(norm($article))
+						
+						
+				} /* article */
+		} /* number */
+} /* criminal_action */

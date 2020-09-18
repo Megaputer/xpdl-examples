@@ -1,0 +1,23 @@
+/* Ищем информацию о задержке авиарейсов в различных городах */
+rule: airline
+{
+	/* Ищем упоминание задержки авиарейсов в предложении */
+	query: {snear(8, задержка or задержать, авиарейсов)}:match
+	
+	/* Ищем пункт отправления/назначения */
+	rule: airport
+	{
+		query: {phrase(6, $match, в, optional(аэропорт),
+					
+					/* Ищем географические названия */
+					phrase(4, not ";", {entity(GeoAdministrative) or phrase(lemma(adjective), аэропорт)}:geo))
+					
+					
+					}:match2
+	
+		result: Результат = $match2
+			attribute: Статус рейса = "Задержка авиарейса"
+			attribute: Аэропорт = totitle(norm(toentity(GeoAdministrative, $geo, field:=Name)))
+		
+	} /* airport */
+} /* airline */
