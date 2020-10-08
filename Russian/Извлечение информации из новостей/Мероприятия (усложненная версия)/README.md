@@ -32,26 +32,26 @@
 		//Пример: компания «БЕЛЛОНА» провела семинар «ЭКО-ЮРИСТ» в Брянске
 		rule: after_org
 		{query: {phrase(5,  $org
-							, phrase(3, phrase(0, not([его]|[её]), проводит|проводил|"принимает участие в"|"принимает участие во"|"был проведен", not(качестве))  										/* Поиск ключевых глаголов и глагольных фраз */
-							, optional($city|$country|$region)																									  										/* Поиск места, где было проведено мероприятие */
-							, optional(phrase("в", term(ee_months), optional(phrase(length(4,4, char(digit)), год))))																					/* Поиск даты мероприятия */
-							, optional($city|$country|$region)																																			/* Поиск места, где было проведено мероприятие */
-							, optional(phrase("для"|[с], term(ee_professions)|"студентов и сотрудников"|"выпускников"))																					/* Поиск людей, для которых было проведено мероприятие */
-							, optional(phrase(0, optional(lemma(adjective)), мероприятие|событие, "-"))																									/* Поиск дополнительного контекста */	
+							, phrase(3, phrase(0, not([его]|[её]), проводит|проводил|"принимает участие в"|"принимает участие во"|"был проведен", not(качестве))  									/* Поиск ключевых глаголов и глагольных фраз */
+							, optional($city|$country|$region)																					/* Поиск места, где было проведено мероприятие */
+							, optional(phrase("в", term(ee_months), optional(phrase(length(4,4, char(digit)), год))))														/* Поиск даты мероприятия */
+							, optional($city|$country|$region)																					/* Поиск места, где было проведено мероприятие */
+							, optional(phrase("для"|[с], term(ee_professions)|"студентов и сотрудников"|"выпускников"))														/* Поиск людей, для которых было проведено мероприятие */
+							, optional(phrase(0, optional(lemma(adjective)), мероприятие|событие, "-"))																/* Поиск дополнительного контекста */	
 							, not(char(comma)|"исследование"|скрининг)																																	/* Исключение некорректных контекстов */
-							, {																																											/* Поиск мероприятий в различных написаниях: */																		
-							  (phrase(0,  repeat(1,6,lemma(noun|adjective|NumeralOrdinal)|[по]|term(ee_roman_num)),																						//- Пятая международная конференция по вопросам образования
+							, {																									/* Поиск мероприятий в различных написаниях: */																		
+							  (phrase(0,  repeat(1,6,lemma(noun|adjective|NumeralOrdinal)|[по]|term(ee_roman_num)),															//- Пятая международная конференция по вопросам образования
 										  optional(phrase(0, [по]|[среди]|[на]|[в]|[для]|"-", optional(вопросам|проблемам), repeat(1,6, lemma(noun|verb_participle|adjective))/orn(время, встреча))
 										  or
-										  phrase(0, char(dq|sq),repeat(1,6, lemma(pronoun|noun|adjective|verb|preposition)|":"|[и]), char(dq|sq))))														//- Пятая международная конференция "Вопросы образования"											
-							  /orn("@", phrase(length(4,4, char(digit)), год), www, неделя, скрининг, создание, [выходные], опрос, исследование, "во время", entity(GeoAdministrative))					/* Исключение некорректных результатов */
+										  phrase(0, char(dq|sq),repeat(1,6, lemma(pronoun|noun|adjective|verb|preposition)|":"|[и]), char(dq|sq))))									//- Пятая международная конференция "Вопросы образования"											
+							  /orn("@", phrase(length(4,4, char(digit)), год), www, неделя, скрининг, создание, [выходные], опрос, исследование, "во время", entity(GeoAdministrative))						/* Исключение некорректных результатов */
 							  )
 							  or
-							  phrase(0, char(dq|sq),repeat(1,5, lemma(pronoun|noun|adjective|verb|preposition)|[среди]|":"), char(dq|sq))																//- Семинар «ЭКО-ЮРИСТ»
+							  phrase(0, char(dq|sq),repeat(1,5, lemma(pronoun|noun|adjective|verb|preposition)|[среди]|":"), char(dq|sq))												//- Семинар «ЭКО-ЮРИСТ»
 							  or
-							  phrase(чемпионат, $region, optional(phrase(0, среди, repeat(1,3, lemma(noun)))))																							//- Чемпионат Москвы среди студентов																					
+							  phrase(чемпионат, $region, optional(phrase(0, среди, repeat(1,3, lemma(noun)))))															//- Чемпионат Москвы среди студентов																					
 							  }:event		
-							, optional($city|$country|$region))																																			/* Поиск места, где было проведено мероприятие */
+							, optional($city|$country|$region))																					/* Поиск места, где было проведено мероприятие */
 						 )
 			 	}:m
 			
@@ -103,23 +103,23 @@
 		//Поиск мероприятий, упомянутых до компании-участника или компании-организатора в одной и той же части предложения
 		//Пример: в Ярмарке образовательных услуг принял участие Юргинский технологический институт
 		rule: before_org
-		{query: {phrase(5, phrase(0, "В"|"состоится"|пройти, not(области|сфере|центре)), not("состоится"|пройти|[в]),  						/* Поиск ключевых глаголов */ 
-						   {phrase(0, repeat(1,5,lemma(noun|adjective|NumeralOrdinal)), 													/* Поиск мероприятия в различных написаниях: */	
-									  optional(phrase(0, [по]|[за]|[на]|[над]|[в]|[для],repeat(1,4, lemma(noun|adjective)|"самый"))			// - Конференция по вопросам образования
+		{query: {phrase(5, phrase(0, "В"|"состоится"|пройти, not(области|сфере|центре)), not("состоится"|пройти|[в]),  							/* Поиск ключевых глаголов */ 
+						   {phrase(0, repeat(1,5,lemma(noun|adjective|NumeralOrdinal)), 								/* Поиск мероприятия в различных написаниях: */	
+									  optional(phrase(0, [по]|[за]|[на]|[над]|[в]|[для],repeat(1,4, lemma(noun|adjective)|"самый"))		// - Конференция по вопросам образования
 									  or
-									  phrase(0, char(dq|sq),repeat(1,4, lemma(pronoun|noun|adjective|verb|preposition)), char(dq|sq))))		// - Конференция "Вопросы образования"
+									  phrase(0, char(dq|sq),repeat(1,4, lemma(pronoun|noun|adjective|verb|preposition)), char(dq|sq))))	// - Конференция "Вопросы образования"
 							  /orn("@", www, неделя, создание, день, исследование, разработка, entity(GeoAdministrative))}:event			/* Исключение некорректных результатов */
 						, optional(phrase("на тему", char(dq), repeat(3,12, char(alpha|col)), char(dq)))
-						, not("состоится"|пройти|[в])																						/* Исключение некорректных контекстов */
-						, "примет участие", $org)																							/* Поиск компании-участника */
+						, not("состоится"|пройти|[в])													/* Исключение некорректных контекстов */
+						, "примет участие", $org)													/* Поиск компании-участника */
 						
 				//Пример: форум по цифровизации пройдет в МГУ	
 				or phrase({orn(фестиваль, курс, "Курс-интенсив", интентсив, конференция, семинар, форум, "цикл лекций", проект, phrase(школа, not(журналистики)))}:event, 		/* Поиск ключевых слов */
-																																												/* Поиск мероприятия в различных написаниях: */	
-						  {phrase(0, optional([по]|[за]|[на]|[над]|[в]|[для]),repeat(1,4, lemma(noun|adjective)|case(upper, [ПО])))												// - Конференция по вопросам образования
+																									/* Поиск мероприятия в различных написаниях: */	
+						  {phrase(0, optional([по]|[за]|[на]|[над]|[в]|[для]),repeat(1,4, lemma(noun|adjective)|case(upper, [ПО])))						// - Конференция по вопросам образования
 						   or
-						   phrase(0, char(dq|sq),repeat(1,4, lemma(pronoun|noun|adjective|verb|preposition)), char(dq|sq))}:event												// - Конференция "Вопросы образования"
-						   ,  phrase(orn(пройдет, стартует, состоится),"на базе"|[в], $org)|phrase($org, проводит))																/* Поиск компании-организатора */
+						   phrase(0, char(dq|sq),repeat(1,4, lemma(pronoun|noun|adjective|verb|preposition)), char(dq|sq))}:event						// - Конференция "Вопросы образования"
+						   ,  phrase(orn(пройдет, стартует, состоится),"на базе"|[в], $org)|phrase($org, проводит))								/* Поиск компании-организатора */
 				}:m
 			
 			//Поиск места проведения мероприятия
