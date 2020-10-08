@@ -1,0 +1,57 @@
+macro: owner() = orn(владелец, совладелец)
+
+rule: filter_texts 
+{
+	//Поиск текстов, где встречаются ключевые компоненты: Люди, Компании и Организации
+	query: {entity(People, field:=Name)}:person
+	or
+	{entity(Companies|Organizations)}:company
+    
+	rule: key_words
+	//Поиск ключевых слов и фраз с найденными выше ключевыми компонентами
+	{
+		query: {macro(owner)
+		or
+		orn(принадлежать, владеть, контролировать)}:owner_np
+		and
+		($person or $company)
+			
+		rule_filter: singular
+		/*Ограничение поиска только внутри тех текстов, где ключевые слова,
+		обозначающие владельца, употреблены в единственном числе*/
+		{
+			query: $owner_np&lemma(singular)
+			
+			rule: owner_of
+			/*Поиск паттернов:
+			- Александр Ильин, совладелец компании "Томский региональный платежный сервис".
+			- Александр Филиппов был владельцем компании «Автореал».
+			- Фирма "Вуолы-Эко" принадлежит Олегу Лебедю.
+			- Основной владелец «Северстали» Алексей Мордашов.
+			- Андрей Озеров владеет ООО "НФК".*/
+			{
+				query: phrase(	{$person}:owner,
+								optional(orn(быть, стать)),
+								optional(orn(назвать, объявить)),
+								{$owner_np}:owner,
+								{$company}:owner
+							)
+				or
+						phrase(	{$company}:owner,
+								{$owner_np}:owner,
+								{$person}:owner
+							)
+								
+				or
+						phrase(	{$owner_np}:owner,
+								{$company}:owner,
+								{$person}:owner
+							)
+							
+				result: Результат = concat($owner:person, " ", $owner:owner_np, " ", $owner:company)
+					attribute: Владелец = toentity(People, $owner:person, field:=Name)
+					attribute: Компания = toentity(Companies|Organizations, $owner:company, field:=Name)
+			}
+		}	
+	}
+}

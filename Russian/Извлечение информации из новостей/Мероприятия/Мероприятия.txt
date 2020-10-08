@@ -1,0 +1,36 @@
+rule: activity 
+{	
+	/* Поиск текстов, содержащих ключевые слова и фразы. Мероприятие ищутся в единственном числе, 
+	   чтобы исключить случаи по типу "мероприятия по обеспечению безопасности граждан" */
+	query: {orn(lemma(singular, мероприятие), конференция, выставка, конкурс, ярмарка)}:obj
+			or
+			phrase(orn(состояться, пройти, стартовать, завершиться, "принять участие в"), optional(repeat(lemma(adjective))), {lemma(noun)/orn(встреча, заседание, экспертиза, открытие)}:obj)
+		
+	/* Поиск названий мероприятий в разных вариантах написания */
+	
+	//Пример: конкурс "Первый элемент"
+	rule: в кавычках
+	{
+		query: {phrase($obj, {phrase(10, char("\""), not char("\""), char("\""), match:=range)}:title)}:full_obj
+		
+		result: Мероприятие = lower(norm($full_obj))
+	}
+	
+
+	//Пример: дискуссия о перспективах электротранспорта
+	rule:по
+	{
+		query: {phrase($obj, orn(по, о, для, lemma(participle, посвятить)), optional([вопросу] or [вопросам]), chunk(np))}:full_obj
+		
+		result: Мероприятие = lower(norm($full_obj))
+	}
+	
+	
+	//Пример: этап ярмарки инновационных проектов
+	rule:генитив
+	{
+		query: {phrase($obj, chunk(np, lemma(noun_genitive), match:=range))}:full_obj
+		
+		result: Мероприятие = lower(norm($full_obj))
+	}
+}
