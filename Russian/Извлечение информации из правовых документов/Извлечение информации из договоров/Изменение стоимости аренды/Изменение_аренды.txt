@@ -1,0 +1,30 @@
+rule: changes
+{
+	/*Ищем тексты, в которых упоминается изменение стоимости аренды*/
+	//Пример: арендная плата может быть изменена
+    query: {phrase(15, phrase(0, "Размер" or основная, "арендной платы" or оплаты) 
+						or "арендная плата" 
+						or "стоимость услуг", 
+						phrase(0, possible(может), быть, изменен or пересмотрен) 
+						or 
+						possible(увеличиваться, изменяться))}:m
+	
+	
+	/*Ищем периодичность, процент и дату увеличения арендной платы*/
+	//Пример: арендная плата может быть пересмотрена не чаще одного раза в год и не более чем на 10%
+	rule: percent
+	{
+		query: {sentence($m, 
+				optional(phrase(0, {phrase(0, не, чаще)}:period, optional(чем), {phrase(0, один, раз, в, год or месяц)}:period)), 
+				{optional(entity(Dates))}:dates,
+				{phrase(0, optional("не более чем"), на, phrase(0, number(), "%"))
+				or
+				phrase(0, на, процент, char(comma), не, превышающий, repeat(1, 30, ., allow_punct:=yes))}:percents)}:match
+		
+		result: Результат = $match
+			attribute: Наличие процентов = "Да"
+			attribute: Периодичность увеличения размера аренды на фиксированный процент  = norm($period)
+			attribute: Размер фиксированного процента увеличения размера аренды = $percents
+			attribute: Дата увеличения размера аренды на процент = concat(toentity(Dates, $dates, field:=Month), toentity(Dates, $dates, field:=Year))
+	}
+}

@@ -1,0 +1,9 @@
+/* Поиск неустоек (штрафов, пеней) и их размера*/
+rule: неустойка
+{
+    query: {phrase (5,{orn(неустойка,штраф,пени)}:неустойка, {entity(Currencies)}:валюта)}:m
+
+	result: Результат = $m        
+		attribute: Размер неустойки=toentity(Currencies,$валюта, field:=Value)
+        attribute: Вид неустойки=title(norm($неустойка))
+}

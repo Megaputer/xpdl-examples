@@ -1,0 +1,16 @@
+rule: использование
+{
+    /*Ищем тексты, в которых встречаются ключевые слова*/
+	query: {sentence(possible(использовать, использоваться, использование, передаваться), помещение or гипермаркет or здание, {"в целях" or для}:for)}:m      
+	
+	/*Ищем вид разрешенного использования*/
+	rule: цель
+	{
+		query: {sentence($m, not phrase(0, подъездный or выездной, путь), phrase("в качестве", {optional(lemma(adjective))}:aim, {lemma(noun, except(адрес))}:aim))}:m2
+				or
+				{phrase($for, осуществления or размещение or организация, optional("в нем"), {repeat(1, 3, lemma(genitive))}:aim)}:m2
+		
+		result: Результат = $m2
+			attribute: Разрешенное использование = totitle(norm($aim))
+	}
+}
