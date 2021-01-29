@@ -1,0 +1,17 @@
+rule: Номер билета
+{
+    
+	query: {phrase(0, 
+					
+					phrase(0, № or номер, optional(электронный), билета)
+					or
+					phrase(0, билет, № or номер)
+					, 
+					
+					optional(":"),
+					
+					{char(numeral)}:num)}:m
+
+	result: Результат = $m        
+		attribute: Номер = $num
+}

@@ -1,0 +1,17 @@
+rule: Код_бронирования
+{
+	query: {phrase(0, synonym(phrase(Код or номер, бронирования or брони or билета or заказа, optional(билета))) or "pnr code", 
+			optional(orn("№", ":", "-")),
+			{length(6, 6, char(alnum|alpha))}:alnum)}:m
+	
+		result: Результат = $m        
+		attribute: Код = $alnum
+		
+		rule: второй_код
+		{
+			query: phrase(0, $m, и or char(comma), {length(6, 6, char(alnum|alpha))}:alnum2)
+			
+			result: Результат = $alnum2       
+				attribute: Код = $alnum2
+		}
+}

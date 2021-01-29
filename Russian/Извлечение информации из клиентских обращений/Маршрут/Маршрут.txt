@@ -1,0 +1,18 @@
+/* Правила для поиска маршрута */
+
+/* Поиск простых паттернов: 
+город вылета (вылет из) - города прилета (направление)
+из *город вылета* в *города прилета* */
+rule: flight 
+{
+
+	query: {phrase({entity(GeoAdministrative)}:from, "-", {entity(GeoAdministrative)}:to)
+			or
+			phrase(из, {entity(GeoAdministrative)}:from, в or до, {entity(GeoAdministrative)}:to)}:m
+			
+		result: Результат = concat(toentity(GeoAdministrative, $m:from, field:=Name), " ", "-", " ", toentity(GeoAdministrative, $m:to, field:=Name))
+			attribute: Город отправления = toentity(GeoAdministrative, $m:from, field:=Name)
+			attribute: Пункт назначения = toentity(GeoAdministrative, $m:to, field:=Name)
+			
+	
+}

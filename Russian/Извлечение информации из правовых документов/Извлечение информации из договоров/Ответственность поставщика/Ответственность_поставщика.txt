@@ -1,0 +1,43 @@
+/* Поиск ключевых слов, связанных с ответсвенностью поставщика */
+macro: resp() = phrase(4, orn("в случае", "в иных случаях", [при], [за])
+						, orn("несоблюдение", "просрочка", "нарушение", "задержка")
+						, near(3, "поставщик"|"продавец", "поставка"|"оплата"|"договор"|"условия"|"отгрузка"|"отгрузки/вывоза")
+						  or 
+						  phrase(5, "поставщик"|"продавец", "условия настоящего договора, связанные с оплатой")
+						  or 
+						  phrase(2, "вызвать", "действиями/бездействием", "поставщик"|"продавец")
+					   )
+/* Поиск ключевых слов, связанных с размером штрафа */
+macro: size() = phrase(2, уплачивать|оплачивать|phrase(2, "несет ответственность", optional("перед другой стороной"|"перед покупателем"), optional("по договору"), "в виде")
+					   , пени|штраф|"штрафная неустойка"
+					   , "в размере" )
+/* Поиск пункта договора */
+macro: clause() = phrase(length(1,2, char(digit)), char(dot), length(1,2, char(digit)), char(dot))
+				  or phrase(0, length(2, 4, char(num)), char(dot))
+/* Поиск неустойки в процентах */
+macro: percent() = phrase(0, char(num), char("%")|"процент", optional(phrase(0, char(lb), number(), char(rb))))
+				  
+rule: responsibility 
+{
+    /* Ищем ключевые слова и пункт договора*/
+	query: follow(2, {macro(clause)}:clause
+					, {macro(resp)}:resp
+				  )
+		
+		/* Ищем размер неустойку поставщика за день и в процентах от общей суммы*/
+		rule: percent_per_day
+		{query: {follow(3, $clause
+						, {sentence(
+									follow($resp, macro(size), {macro(percent)}:percent, "за каждый день просрочки")
+									
+									, {optional(phrase("не более", macro(percent), "от стоимости"|"от суммы", repeat(1,2,lemma(genitive))))}:forfeit
+									, match:=range)}:per_day
+						, match:=range)}:m
+		
+		result: Ответственность поставщика = $m        
+			attribute: Пункт договора «Ответственность поставщика» = $clause
+			attribute: Неустойка поставщика за день = $percent	
+			attribute: Неустойка поставщика = $forfeit				
+				
+		}
+}

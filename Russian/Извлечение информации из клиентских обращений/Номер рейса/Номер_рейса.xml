@@ -1,0 +1,362 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<syntax>XEE</syntax>
+<version>0</version>
+<language>Russian</language>
+<user_entities>
+    <entity>
+        <enable>true</enable>
+        <color>15431289</color>
+        <createMatchColumns>true</createMatchColumns>
+        <createRuleNameColumn>true</createRuleNameColumn>
+        <description/>
+        <useLinguaMarkSyntax>false</useLinguaMarkSyntax>
+        <trainedModelId/>
+        <columnsOrder>
+            <column>Match</column>
+            <column>Номер рейса и дата</column>
+            <column>Номер рейса</column>
+            <column>Дата перелета</column>
+        </columnsOrder>
+        <validationColumns>
+            <attribute>Номер рейса и дата</attribute>
+            <attribute>Номер рейса</attribute>
+            <attribute>Дата перелета</attribute>
+        </validationColumns>
+        <defaultHiddenColumns/>
+        <type>
+            <name>Custom/Номер рейса</name>
+            <category>1</category>
+        </type>
+        <xpdl>
+            <default_rule>false</default_rule>
+            <rule>/* Макрос для поиска номера рейса. */
+macro: flight_number () = orn(phrase(0, length(2, 2, char(latin)), length(3, 4, char(digit))), 
+						      regex(&quot;[A-z][A-z]\-?\d+&quot;, wholeword:=yes))
+/* Макрос для исключения ложных номеров. */
+macro: wrong_flight () = orn(phrase(&quot;и&quot;, обратно), возвращаться)
+/* Макрос для исключения ложных дат. */
+macro: wrong_date () = orn(сообщить, перебронировать, запланированный, приобрести, уведомление)
+						  
+rule: flight_number
+{
+    /* Ищем ключевые слова и номер рейса. */
+	query: {orn(phrase(3, optional(рейс|&quot;номер рейса&quot;), {macro(flight_number)}:number),
+		   phrase(3, рейс|&quot;номер рейса&quot;, {length(3, 4, char(digit))}:number))}:m
+		   
+	result: Результат = $m        
+		attribute: Номер рейса = $number
+	
+	/* Ищем дату рейса, расположенную после номера. */
+	rule: date_after
+	{
+		query: {phrase(6, $m, not(entity(Dates, Day:&gt;0)|macro(wrong_flight)|phrase(&quot;)&quot;, &quot;,&quot;)), {entity(Dates, Day:&gt;0)}:date)
+				or
+				phrase($m, not(phrase(&quot;)&quot;, &quot;,&quot;)), {entity(Dates, Day:&gt;0)}:date)}:m_date
+		
+		/* Исключаем ложные результаты. */
+		rule_except: not_date
+		{
+			query: phrase($m_date, phrase(5, $m, not(entity(Dates, Day:&gt;0))))
+				   or
+				   phrase($m_date, entity(Dates, Day:&gt;0))
+			
+			result: Результат = $m_date        
+				attribute: Номер рейса = $number
+				attribute: День = toentity(Dates, field:=Day, $date)
+				attribute: Месяц = toentity(Dates, field:=Month, $date)
+				attribute: Год = toentity(Dates, field:=Year, $date)
+		}
+	}
+	
+	/* Ищем дату рейса, расположенную до номера. */
+	rule: date_before
+	{
+		query: {phrase(5, {entity(Dates, Day:&gt;0)}:date, not(&quot;и&quot;), &quot;(&quot;, $m)
+				or
+				phrase(7, {entity(Dates, Day:&gt;0)}:date,
+				not(&quot;;&quot;|macro(wrong_flight)|macro(wrong_date)|entity(Dates, Day:&gt;0)), phrase(2, $m, not(entity(Dates, Day:&gt;0))))
+				or
+				phrase({entity(Dates, Day:&gt;0)}:date, &quot;,&quot;, $m, allow_punct:=yes)}:m_date
+		
+		/* Исключаем ложные результаты. */
+		rule_except: not_date
+		{
+			query: phrase(3, $m, optional(&quot;-&quot;), $m_date, allow_punct:=no)
+				   or
+				   phrase(entity(Dates, Day:&gt;0), &quot;/&quot;, $m_date)
+				   or
+				   ($m_date &amp; phrase(char(digit), &quot;и&quot;, char(digit), term(ee_months)))
+			
+			result: Результат = $m_date        
+				attribute: Номер рейса = $number
+				attribute: День = toentity(Dates, field:=Day, $date)
+				attribute: Месяц = toentity(Dates, field:=Month, $date)
+				attribute: Год = toentity(Dates, field:=Year, $date)
+		}
+	}	
+}
+</rule>
+            <match_column_name>Match</match_column_name>
+            <test_text/>
+            <XEntityRuleBookmarks/>
+        </xpdl>
+        <filter/>
+        <postprocessing>
+            <postprocessors>
+                <postprocessor>
+                    <caption>Derive</caption>
+                    <enabled>true</enabled>
+                    <standard>false</standard>
+                    <params>
+                        <postprocessorName>DerivePostprocessor</postprocessorName>
+                        <matchedAttributes>
+                            <attribute>
+                                <attrType>$num_int</attrType>
+                                <asked>Год</asked>
+                                <proposed>Год</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Дата</asked>
+                                <proposed>Дата</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$text</attrType>
+                                <asked>Дата</asked>
+                                <proposed>Дата 1</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$text</attrType>
+                                <asked>Дата</asked>
+                                <proposed>Дата 2</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$text</attrType>
+                                <asked>Дата</asked>
+                                <proposed>Дата 3</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$num_datetime</attrType>
+                                <asked>Дата перелета</asked>
+                                <proposed>Дата перелета</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$num_int</attrType>
+                                <asked>День</asked>
+                                <proposed>День</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Месяц</asked>
+                                <proposed>Месяц</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Номер Рейса</asked>
+                                <proposed>Номер Рейса</proposed>
+                            </attribute>
+                        </matchedAttributes>
+                        <options>
+                            <DerivativeItems>
+                                <DerivativeItem>
+                                    <AttributeName>Год</AttributeName>
+                                    <AttributeType>$num_int</AttributeType>
+                                    <Expression>if(isnull([Год]) and not(isnull([День])), 2020, [Год])</Expression>
+                                </DerivativeItem>
+                                <DerivativeItem>
+                                    <AttributeName>Дата перелета</AttributeName>
+                                    <AttributeType>$num_datetime</AttributeType>
+                                    <Expression>makedate([Год], str2int([Месяц]), [День])</Expression>
+                                </DerivativeItem>
+                            </DerivativeItems>
+                        </options>
+                    </params>
+                </postprocessor>
+                <postprocessor>
+                    <caption>Normalization</caption>
+                    <enabled>true</enabled>
+                    <standard>false</standard>
+                    <params>
+                        <postprocessorName>NormalizePostprocessor</postprocessorName>
+                        <matchedAttributes>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Месяц</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Номер Рейса</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$$$$</attrType>
+                                <asked/>
+                                <proposed>Номер рейса</proposed>
+                            </attribute>
+                        </matchedAttributes>
+                        <options>
+                            <attribute_options>
+                                <attribute_name>Месяц</attribute_name>
+                                <options>
+                                    <ReplaceOption>
+                                        <Case_sensitive>false</Case_sensitive>
+                                        <Regular_expression>false</Regular_expression>
+                                        <Scope_option>Word</Scope_option>
+                                        <ReplaceRules>
+                                            <ReplaceRule>
+                                                <Search>Январь</Search>
+                                                <Replace>01</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Февраль</Search>
+                                                <Replace>02</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Март</Search>
+                                                <Replace>03</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Апрель</Search>
+                                                <Replace>04</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>апр</Search>
+                                                <Replace>04</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>apr</Search>
+                                                <Replace>04</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Май</Search>
+                                                <Replace>05</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Июнь</Search>
+                                                <Replace>06</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Июль</Search>
+                                                <Replace>07</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Август</Search>
+                                                <Replace>08</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Сентябрь</Search>
+                                                <Replace>09</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Октябрь</Search>
+                                                <Replace>10</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Ноябрь</Search>
+                                                <Replace>11</Replace>
+                                            </ReplaceRule>
+                                            <ReplaceRule>
+                                                <Search>Декабрь</Search>
+                                                <Replace>12</Replace>
+                                            </ReplaceRule>
+                                        </ReplaceRules>
+                                        <NormalizationOption>
+                                            <Apply_option>0</Apply_option>
+                                        </NormalizationOption>
+                                    </ReplaceOption>
+                                </options>
+                            </attribute_options>
+                            <attribute_options>
+                                <attribute_name>Номер рейса</attribute_name>
+                                <options>
+                                    <ReplaceOption>
+                                        <Case_sensitive>false</Case_sensitive>
+                                        <Regular_expression>true</Regular_expression>
+                                        <Scope_option>Text</Scope_option>
+                                        <ReplaceRules>
+                                            <ReplaceRule>
+                                                <Search>([A-z][A-z])(\d+)</Search>
+                                                <Replace>\1 \2</Replace>
+                                            </ReplaceRule>
+                                        </ReplaceRules>
+                                        <NormalizationOption>
+                                            <Apply_option>0</Apply_option>
+                                        </NormalizationOption>
+                                    </ReplaceOption>
+                                    <CaseNormalizationOption>
+                                        <Case_normalization>131072</Case_normalization>
+                                        <NormalizationOption>
+                                            <Apply_option>0</Apply_option>
+                                        </NormalizationOption>
+                                    </CaseNormalizationOption>
+                                </options>
+                            </attribute_options>
+                        </options>
+                    </params>
+                </postprocessor>
+                <postprocessor>
+                    <caption>Derive 1</caption>
+                    <enabled>true</enabled>
+                    <standard>false</standard>
+                    <params>
+                        <postprocessorName>DerivePostprocessor</postprocessorName>
+                        <matchedAttributes>
+                            <attribute>
+                                <attrType>$num_int</attrType>
+                                <asked>Год</asked>
+                                <proposed>Год</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Дата перелета</asked>
+                                <proposed>Дата перелета</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$num_datetime</attrType>
+                                <asked>Дата перелета</asked>
+                                <proposed>Дата перелета 1</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$num_int</attrType>
+                                <asked>День</asked>
+                                <proposed>День</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Месяц</asked>
+                                <proposed>Месяц</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Номер рейса</asked>
+                                <proposed>Номер рейса</proposed>
+                            </attribute>
+                            <attribute>
+                                <attrType>$cat_string</attrType>
+                                <asked>Номер рейса и дата</asked>
+                                <proposed>Номер рейса и дата</proposed>
+                            </attribute>
+                        </matchedAttributes>
+                        <options>
+                            <DerivativeItems>
+                                <DerivativeItem>
+                                    <AttributeName>Номер рейса и дата</AttributeName>
+                                    <AttributeType>$cat_string</AttributeType>
+                                    <Expression>if(isnull([День]), [Номер рейса], concat(&quot;&quot;, [Номер рейса], &quot; (&quot;, concat(&quot;.&quot;, str([День]), [Месяц], str([Год])), &quot;)&quot;))</Expression>
+                                </DerivativeItem>
+                            </DerivativeItems>
+                        </options>
+                    </params>
+                </postprocessor>
+            </postprocessors>
+        </postprocessing>
+        <lingua_mark>
+            <version>0</version>
+            <enable>true</enable>
+            <name/>
+            <max_confidence>1</max_confidence>
+        </lingua_mark>
+        <dependencies/>
+    </entity>
+</user_entities>
