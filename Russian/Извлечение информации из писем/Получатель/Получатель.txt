@@ -1,0 +1,43 @@
+/* Правило для поиска получателя письма */
+
+/* Поиск имени получателя через стандартную сущность People в дательном падеже */
+rule: имя_получателя
+{
+	query: {follow({optional(копия)}:копия, 
+					// CaseAccusative на случай ошибок индексирования, напр., "Класину Д. А."
+					position(200, {entity(People)}:имя & lemma(CaseDative|CaseAccusative)))}:м
+
+	result: Match = $м
+		attribute: Получатель = toentity(People, $имя)
+		attribute: Должность = toentity(People, $имя, field:=Attribute)
+		attribute: Компания = toentity(Companies, toentity(People, $имя, field:=Attribute))
+		attribute: Тип = if($копия, "Копия", "Оригинал")
+		
+	/* 
+		Поиск атрибутов получателя, не найденных стандартной сущностью.
+		Примеры атрибутов:
+		"Техническому директору АО «ATM»"
+		"Заместителю начальника управления инженерной поддержки ПАО «Силовые машины»"
+	*/
+	rule: атрибуты_получателя
+	{
+		query: {follow({optional(копия)}:копия_письма,
+					fnear(repeat(1, 10, {orn(начальник, генеральный, технический, директор, заместитель,
+							// "и.о."
+							phrase(и, ".", о, "."), "исполняющий обязанности",
+							// "по атомной энергетике, маркетингу и развитию новых продуктов"
+							phrase(по, repeat(1, 10, lemma(CaseDative|CaseGenitive) or "и" or char(punct))),
+							// "Управления технической поддержки и подготовки ТКП ДАЭ",
+							// "блоков 1-4"
+							lemma(CaseGenitive|CaseNominative), number(), "и", "-")}:должность
+							// "ПАО «Силовые машины»"
+							or {entity(Companies|Organizations)}:компания),
+							$имя))}:м_атр
+		
+		result: Match = $м_атр
+			attribute: Получатель = toentity(People, $имя)
+			attribute: Должность = $должность
+			attribute: Компания = toentity(Companies, $компания)
+			attribute: Тип = if($копия_письма, "Копия", "Оригинал")
+	}
+}
